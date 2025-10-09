@@ -1,5 +1,6 @@
 //! CRUD -> CREATE/POST, READ/GET, UPDATE, DELETE
 const User = require("../models/User.js");
+const bcrypt = require("bcrypt");
 
 // POST /user registrar user
 const registerUser = async (req, res, next) => {
@@ -40,9 +41,32 @@ const registerUser = async (req, res, next) => {
   }
 };
 
-const login = async (req, res, next) => {
+// POST /login user
+const loginUser = async (req, res, next) => {
   try {
-  } catch (error) {}
+    const { userName, email, password } = req.body;
+
+    //1. Verificar si existe el usuario y email
+    const existingUserName = await User.findOne({ userName });
+    const existingEmail = await User.findOne({ email });
+    //2. Seleccionar el usuario que haya encontrado
+    const user = existingUserName || existingEmail;
+
+    if (!user) {
+      return res.status(404).json("El usuario introducido no existe");
+    }
+
+    //3. Comparar contraseña con bcrypt
+    const isPasswordValid = bcrypt.compareSync(password, user.password);
+    if (!isPasswordValid) {
+      //! Lo que pasa cuando nos logeamos con jsonwebtoken. A continuación...
+      return res.status(401).json("El usuario o la contraseña no son correctos");
+    }
+    //4. Si user y password ok
+    return res.status(200).json("Te has loggeado correctamente");
+  } catch (error) {
+    res.status(400).json({ message: "Error al obtener usuarios", error: error.message });
+  }
 };
 
-module.exports = { registerUser };
+module.exports = { registerUser, loginUser };
