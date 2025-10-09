@@ -1,4 +1,5 @@
 //! CRUD -> CREATE/POST, READ/GET, UPDATE, DELETE
+const { generateSign } = require("../../config/jwt.js");
 const User = require("../models/User.js");
 const bcrypt = require("bcrypt");
 
@@ -62,10 +63,18 @@ const loginUser = async (req, res, next) => {
       //! Lo que pasa cuando nos logeamos con jsonwebtoken. A continuación...
       return res.status(401).json("El usuario o la contraseña no son correctos");
     }
+
+    // Si todo está bien -> generar token JWT
+    const token = generateSign(user_.id);
+
     //4. Si user y password ok
-    return res.status(200).json("Te has loggeado correctamente");
+    return res.status(200).json({
+      message: "Te has logueado correctamente",
+      token,
+      user: { id: user._id, userName: user.userName, email: user.email, role: user.role },
+    });
   } catch (error) {
-    res.status(400).json({ message: "Error al obtener usuarios", error: error.message });
+    res.status(500).json({ message: "Error en el servidor al intentar loguear", error: error.message });
   }
 };
 
