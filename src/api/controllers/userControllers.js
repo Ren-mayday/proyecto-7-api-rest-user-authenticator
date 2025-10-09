@@ -24,7 +24,7 @@ const registerUser = async (req, res, next) => {
     // 3. Comprobar si user name está duplicados
     const userDuplicated = await User.findOne({ userName });
     if (userDuplicated) {
-      return res.status(409).json("Este nombre de usuario ya existe. Por favor, indica otro nombre de usuario.");
+      return res.status(409).json("Este usuario ya existe. Por favor, indica otro nombre de usuario.");
     }
     // 4. Comprobar si email está duplicado
     const emailDuplicated = await User.findOne({ email });
@@ -36,7 +36,7 @@ const registerUser = async (req, res, next) => {
     const newUser = new User({ userName, email, password });
     const userSaved = await newUser.save();
 
-    return res.status(201).json(userSaved);
+    return res.status(201).json({ message: "Usuario registrado correctamente", user: userSaved });
   } catch (error) {
     res.status(500).json({ message: "Error al registrar usuario", error: error.message });
   }
@@ -47,11 +47,7 @@ const loginUser = async (req, res, next) => {
   try {
     const { userName, email, password } = req.body;
 
-    //1. Verificar si existe el usuario y email
-    const existingUserName = await User.findOne({ userName });
-    const existingEmail = await User.findOne({ email });
-    //2. Seleccionar el usuario que haya encontrado
-    const user = existingUserName || existingEmail;
+    const user = await User.findOne({ $or: [{ userName }, { email }] });
 
     if (!user) {
       return res.status(404).json("El usuario introducido no existe");
@@ -60,12 +56,11 @@ const loginUser = async (req, res, next) => {
     //3. Comparar contraseña con bcrypt
     const isPasswordValid = bcrypt.compareSync(password, user.password);
     if (!isPasswordValid) {
-      //! Lo que pasa cuando nos logeamos con jsonwebtoken. A continuación...
-      return res.status(401).json("El usuario o la contraseña no son correctos");
+      return res.status(401).json("El usuario o la contraseña son incorrectos");
     }
 
     // Si todo está bien -> generar token JWT
-    const token = generateSign(user_.id);
+    const token = generateSign(user._id);
 
     //4. Si user y password ok
     return res.status(200).json({
