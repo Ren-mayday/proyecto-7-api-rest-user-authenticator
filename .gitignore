@@ -1,2 +1,5 @@
 /node_modules
 .env
+# Seeds
+src/utils/Seeds/users.seeds.js
+src/data/seedUsers.js

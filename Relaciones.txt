@@ -1,0 +1,5 @@
+Relaciones
+Modelo	Relación
+User	1 user → muchas GameSessions
+Game	1 game → muchas GameSessions
+GameSession	pertenece a 1 user y 1 game

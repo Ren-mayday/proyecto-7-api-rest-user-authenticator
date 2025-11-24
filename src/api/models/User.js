@@ -6,8 +6,8 @@ const bcrypt = require("bcrypt"); // Traerme bcrypt
 const userSchema = new mongoose.Schema(
   {
     userName: { type: String },
-    email: { type: String, unique: true },
-    password: { type: String },
+    email: { type: String, unique: true, required: true },
+    password: { type: String, required: true },
     role: { type: String, enum: ["user", "admin"], default: "user" },
   },
   {
@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", function (next) {
+  if (!this.isModified("password")) return next();
   this.password = bcrypt.hashSync(this.password, 10);
   next();
 });
