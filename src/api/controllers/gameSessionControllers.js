@@ -84,6 +84,42 @@ const getSession = async (req, res) => {
   }
 };
 
+// UPDATE
+const updateSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { gameId, score, duration } = req.body;
+
+    const session = await GameSession.findById(id);
+    if (!session) return res.status(404).json("Sesión no encontrada");
+
+    // Permisos: admin o dueño de la sesión
+    if (req.user.role !== "admin" && req.user._id.toString() !== session.user.toString()) {
+      return res.status(403).json("No puedes modificar esta sesión");
+    }
+
+    // Si se envía un nuevo gameId, validar que exista
+    if (gameId) {
+      const game = await Game.findById(gameId);
+      if (!game) return res.status(404).json("Juego no encontrado");
+      session.game = gameId;
+    }
+
+    // Actualizar solo los campos enviados
+    if (score !== undefined) session.score = score;
+    if (duration !== undefined) session.duration = duration;
+
+    const updatedSession = await session.save();
+
+    return res.status(200).json(updatedSession);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error al actualizar sesión",
+      error: error.message,
+    });
+  }
+};
+
 // DELETE
 const deleteSession = async (req, res) => {
   try {
@@ -108,5 +144,6 @@ module.exports = {
   getUserSessions,
   getGameSessions,
   getSession,
+  updateSession,
   deleteSession,
 };
