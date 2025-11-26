@@ -160,75 +160,85 @@ const loginUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { userName, email, password, newUserName, newEmail, newPassword } = req.body;
+    const { id } = req.params;
+    const { newUserName, newEmail, newPassword, newRole, currentPassword } = req.body;
 
-    // 1. ID objetivo
-    const targetId = req.user.role === "admin" ? req.params.id : req.user._id;
+    // 1. Buscar usuario objetivo
+    const user = await User.findById(id).select("+password");
 
-    // 2. Buscar usuario
-    const user = await User.findById(targetId);
-    if (!user) return res.status(404).json("Usuario no encontrado");
+    if (!user) {
+      return res.status(404).json("Usuario no encontrado");
+    }
 
-    // 3. Permisos: usuarios normales deben validar su info actual
-    if (req.user.role !== "admin") {
-      // Comparar userName
-      if (user.userName !== userName) {
-        return res.status(401).json("El nombre de usuario actual no coincide");
+    const isAdmin = req.user.role === "admin";
+    const isOwner = req.user._id.toString() === id;
+
+    // 2. Permisos
+    // Admin puede actualizar cualquier user
+    // Usuario normal solo puede actualizar su propio perfil
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json("No puedes modificar este usuario");
+    }
+
+    // 3. Si NO es admin, debe validar su contraseña para actualizar datos
+    if (!isAdmin) {
+      if (!currentPassword) {
+        return res.status(400).json("Debes enviar tu contraseña actual para actualizar tus datos");
       }
-      // Comparar email
-      if (user.email !== email) {
-        return res.status(401).json("El email actual no coincide");
-      }
-      // Comparar password actual
-      if (!bcrypt.compareSync(password, user.password)) {
-        return res.status(401).json("La contraseña actual no coincide");
+
+      const isValidPass = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPass) {
+        return res.status(401).json("La contraseña actual es incorrecta");
       }
     }
 
-    // 4. Validar que haya algo para actualizar
-    if (!newUserName && !newEmail && !newPassword) {
-      return res.status(400).json("Debes enviar al menos un dato nuevo para actualizar.");
+    // 4. Admin puede cambiar el rol
+    if (isAdmin && newRole) {
+      if (!["admin", "user"].includes(newRole)) {
+        return res.status(400).json("Rol inválido. Debe ser 'admin' o 'user'");
+      }
+      user.role = newRole;
     }
 
-    if (newUserName && newUserName === user.userName) {
-      return res.status(400).json("El nuevo nombre de usuario es igual al actual");
-    }
-
-    if (newEmail && newEmail === user.email) {
-      return res.status(400).json("El nuevo email es igual al actual");
-    }
-
-    if (newPassword && bcrypt.compareSync(newPassword, user.password)) {
-      return res.status(400).json("La nueva contraseña no puede ser igual a la actual");
-    }
-
-    // 5. Validar duplicados si llega newUserName
+    // 5. Actualización de nombre de usuario
     if (newUserName && newUserName !== user.userName) {
-      const nameExists = await User.findOne({ userName: newUserName });
-      if (nameExists) return res.status(409).json("Este nombre de usuario ya existe");
+      const exists = await User.findOne({ userName: newUserName });
+      if (exists) return res.status(409).json("Este nombre de usuario ya existe");
       user.userName = newUserName;
     }
 
-    // 6. Validar duplicados si llega newEmail
+    // 6. Actualización de email
     if (newEmail && newEmail !== user.email) {
-      const emailExists = await User.findOne({ email: newEmail });
-      if (emailExists) return res.status(409).json("Este email ya está registrado");
+      const exists = await User.findOne({ email: newEmail });
+      if (exists) return res.status(409).json("Este email ya está registrado");
       user.email = newEmail;
     }
 
-    // 7. Actualizar contraseña (solo asignamos, mongoose la hasheará con pre-save)
-    if (newPassword) user.password = newPassword;
+    // 7. Actualización de contraseña
+    if (newPassword) {
+      const same = await bcrypt.compare(newPassword, user.password);
+      if (same) {
+        return res.status(400).json("La nueva contraseña no puede ser igual a la actual");
+      }
+      user.password = newPassword; // mongoose la hashea por el pre-save
+    }
 
-    // 8. Guardar
-    const updatedUser = await user.save();
-    updatedUser.password = undefined;
+    // 8. Guardar cambios
+    const updated = await user.save();
+
+    // 9. Limpiar password antes de enviar
+    const userObj = updated.toObject();
+    delete userObj.password;
 
     return res.status(200).json({
       message: "Usuario actualizado correctamente",
-      user: updatedUser,
+      user: userObj,
     });
   } catch (error) {
-    res.status(500).json({ message: "Error en updateUser", error: error.message });
+    return res.status(500).json({
+      message: "Error en updateUser",
+      error: error.message,
+    });
   }
 };
 
