@@ -23,7 +23,7 @@ gameSessionsRoutes.get("/game/:id", [isAuth], getGameSessions); // usuario o pú
 gameSessionsRoutes.get("/:id", [isAuth], getSession); // dueño o admin
 
 // UPDATE
-gameSessionsRoutes.put("/:id", [isAuth, isAdmin], updateSession); // dueño o admin
+gameSessionsRoutes.put("/:id", [isAuth], updateSession); // dueño o admin
 
 // DELETE (admin o dueño)
 gameSessionsRoutes.delete("/:id", [isAuth], deleteSession);

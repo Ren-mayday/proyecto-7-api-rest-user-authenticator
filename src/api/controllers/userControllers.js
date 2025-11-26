@@ -232,6 +232,49 @@ const updateUser = async (req, res) => {
   }
 };
 
+// PATCH /users/:id/role (sólo admin)
+const updateUserRole = async (req, res) => {
+  try {
+    // Solo puede hacerlo un admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json("No tienes permisos para cambiar el rol de un usuario");
+    }
+
+    const { id } = req.params;
+    const { role } = req.body; // "admin" o "user"
+
+    // Validación básica
+    if (!role || !["admin", "user"].includes(role)) {
+      return res.status(400).json("Debes enviar un rol válido: 'admin' o 'user'");
+    }
+
+    // Buscar usuario
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json("Usuario no encontrado");
+
+    // Si ya tiene el rol
+    if (user.role === role) {
+      return res.status(400).json("Este usuario ya tiene ese rol");
+    }
+
+    // Actualizar rol
+    user.role = role;
+    await user.save();
+
+    user.password = undefined;
+
+    return res.status(200).json({
+      message: "Rol actualizado correctamente",
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error al actualizar el rol del usuario",
+      error: error.message,
+    });
+  }
+};
+
 const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -254,4 +297,13 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllUsers, getUser, registerUser, registerAdmin, loginUser, updateUser, deleteUser };
+module.exports = {
+  getAllUsers,
+  getUser,
+  registerUser,
+  registerAdmin,
+  loginUser,
+  updateUser,
+  updateUserRole,
+  deleteUser,
+};

@@ -8,6 +8,7 @@ const {
   loginUser,
   updateUser,
   deleteUser,
+  updateUserRole,
 } = require("../controllers/userControllers");
 
 const usersRoutes = require("express").Router();
@@ -26,6 +27,9 @@ usersRoutes.post("/login", loginUser);
 
 // Update -> solo autenticados, admin o usuario normal
 usersRoutes.put("/update/:id", [isAuth], updateUser);
+
+// Update role -> sólo admin puede cambiar role
+usersRoutes.patch("/:id/role", [isAuth, isAdmin], updateUserRole);
 
 // Delete -> solo autenticados (admin o users así mismos)
 usersRoutes.delete("/:id", [isAuth], deleteUser);
