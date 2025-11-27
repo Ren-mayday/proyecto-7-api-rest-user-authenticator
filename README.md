@@ -1,12 +1,12 @@
 1. Title of the project: Proyecto 7 API REST AUTH.
 2. Description:
-   What the project does? -> BBDD for a Game’s Hub website. It has three models: Users.js, Game.js, GameSessions.js. Allow users to register, login, create games, view which games are on BBDD, create sessions, view sessions, delete users, games and sessions, etc.
-   What is for? Hypothetical database for a Game’s Hub website (it is just an example because it is not connecting to Front).
-   Technologies: NPM -> npm init -y, Express -> npm i express, Dotenv -> npm i dotenv, Mongoose -> npm i mongoose, jsonwebtoken -> npm i jsonwebtoken, bcrypt -> encript password
-   Roles
-   user -> can register, log in, manage their own profile, and create/view their own game sessions.
-   admin -> full access: can manage all users, all games, and all game sessions.
-   Role validation is handled through JWT authentication (isAuth.js) and authorization (isAdmin.js) middlewares.
+   - What the project does? -> BBDD for a Game’s Hub website. It has three models: Users.js, Game.js, GameSessions.js. Allow users to register, login, create games, view which games are on BBDD, create sessions, view sessions, delete users, games and sessions, etc.
+   - What is for? Hypothetical database for a Game’s Hub website (it is just an example because it is not connecting to Front).
+   - Technologies: NPM -> npm init -y, Express -> npm i express, Dotenv -> npm i dotenv, Mongoose -> npm i mongoose, jsonwebtoken -> npm i jsonwebtoken, bcrypt -> encript password
+   - Roles
+     user -> can register, log in, manage their own profile, and create/view their own game sessions.
+     admin -> full access: can manage all users, all games, and all game sessions.
+     Role validation is handled through JWT authentication (isAuth.js) and authorization (isAdmin.js) middlewares.
 
 Collection Relationships. The project includes two main relationships:
 User → GameSession: each game session belongs to a specific user.
@@ -14,24 +14,50 @@ user: { type: ObjectId, ref: "User" }
 Game → GameSession: each session is linked to a specific game.
 game: { type: ObjectId, ref: "Game" }
 A user can have multiple game sessions. A game can have multiple sessions associated.
-GameSession.find().populate("user", "userName").populate("game", "name"); 3. Prerequisites:
-Node installed
-MongoDB
-Postman/Insomnia (for tests) 4. Installation and use
-.env -> PORT=4000. DB_URL=mongodb+srv//your_db_user:password@cluster.yourBBDD. JWT_SECRET=whatever123
-Star server: npm run dev 5. Seed (run initial data) -> npm run usersSeed 7. Endpoints
-Users:
-getAllUsers() GET all users /api/v1/users -> Read users only admin.
-getUser() GET a specific user /api/v1/users/user/:userName.
-registerUser() POST /api/v1/users/register {
-"userName": "",
-"email": "",
-"password": ""
-}
-registerAdmin() POST /api/v1/users/register/admin -> An admin creates another admin.
-loginUser() POST /api/v1/users/login -> will generate a token
-updateUser() PUT /api/v1/users/update/:id -> only admins and the owner of the user if they are authenticated (token)
-deleteUser() DELETE /api/v1/users/:id -> only admins (admin can delete any user) and the owner of the user if they are authenticated (token)
+GameSession.find().populate("user", "userName").populate("game", "name");
+
+- What isAuth.js and isAdmin.js files do?
+
+isAuth:
+
+- Checks if there is a token
+- Gets rid of "Bearer "
+- Obtains user ID from the token
+- Searches the user on BBDD
+- If it exists, it stores it in req.user so that the following middlewares or controllers can use it.
+  Summary: isAuth = 'You are a registered user with a valid token.
+
+isAdmin:
+
+- This middleware assumes that isAuth has already filled req.user.
+  Then it only checks: req.user.role === 'admin'
+  Summary:
+  isAdmin = You are an authenticated user and your role is admin.
+
+3. Prerequisites:
+   Node installed
+   MongoDB
+   Postman/Insomnia (for tests)
+
+4. Installation and use
+   .env -> PORT=4000. DB_URL=mongodb+srv//your_db_user:password@cluster.yourBBDD. JWT_SECRET=whatever123
+   Star server: npm run dev
+
+5. Seed (run initial data) -> npm run usersSeed
+
+6. Endpoints
+   Users:
+   getAllUsers() GET all users /api/v1/users -> Read users only admin.
+   getUser() GET a specific user /api/v1/users/user/:userName.
+   registerUser() POST /api/v1/users/register {
+   "userName": "",
+   "email": "",
+   "password": ""
+   }
+   registerAdmin() POST /api/v1/users/register/admin -> An admin creates another admin.
+   loginUser() POST /api/v1/users/login -> will generate a token
+   updateUser() PUT /api/v1/users/update/:id -> only admins and the owner of the user if they are authenticated (token)
+   deleteUser() DELETE /api/v1/users/:id -> only admins (admin can delete any user) and the owner of the user if they are authenticated (token)
 
 Games:
 createGame() POST /api/v1/games/ -> Create a game only admin
@@ -53,7 +79,7 @@ getGameSessions() GET /api/v1/sessions/game/:id -> user owner session
 getSessions() GET /api/v1/sessions/:id -> user owner or admins
 deleteSession() DELETE /api/v1/sessions/:id -> user owner or admins
 
-8. PROYECTO 7 API REST AUTH/
+7. PROYECTO 7 API REST AUTH/
    │
    ├── server.js
    │
@@ -91,12 +117,12 @@ deleteSession() DELETE /api/v1/sessions/:id -> user owner or admins
    │
    └── README.md
 
-9. Authentication
+8. Authentication
    Token generation: When a user logs in, the server validates the credentials and creates a JWT token signed with a secret key.
    How to send it: Include the token in every protected request using the header:
    Authorization: Bearer <token>
 
-10. Errors:
+9. Errors:
 
 - 401: invalid token
 - 403: You do not have permissions
