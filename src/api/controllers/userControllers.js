@@ -293,17 +293,21 @@ const deleteUser = async (req, res, next) => {
       return res.status(403).json("No tienes permisos para eliminar este usuario");
     }
 
+    // 1. Eliminar usuario
     const userDeleted = await User.findByIdAndDelete(id);
     if (!userDeleted) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
+    // 2. Eliminar sus sesiones asociadas
+    await GameSession.deleteMany({ user: id });
+
     return res.status(200).json({
-      message: "Este usuario ha sido eliminado",
+      message: "Usuario y sus sesiones asociadas han sido eliminados",
       userDeleted,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Error al eliminar el usuario", error });
+    return res.status(500).json({ message: "Error al eliminar el usuario", error: error.message });
   }
 };
 

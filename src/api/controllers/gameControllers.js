@@ -103,14 +103,17 @@ const deleteGame = async (req, res) => {
 
     const { id } = req.params;
 
+    // 1. Eliminar juego
     const deletedGame = await Game.findByIdAndDelete(id);
-
     if (!deletedGame) {
       return res.status(404).json("Juego no encontrado");
     }
 
+    // 2. Eliminar sesiones asociadas
+    await GameSession.deleteMany({ game: id });
+
     return res.status(200).json({
-      message: "Juego eliminado correctamente",
+      message: "Juego y sus sesiones asociadas eliminados correctamente",
       deletedGame,
     });
   } catch (error) {
