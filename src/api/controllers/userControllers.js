@@ -36,7 +36,7 @@ const getUser = async (req, res) => {
       return res.status(403).json("No tienes permisos para ver este usuario");
     }
 
-    const user = await User.findOne({ userName });
+    const user = await User.findOne({ userName }).select("-password");
 
     if (!user) {
       return res.status(404).json("Usuario no encontrado");

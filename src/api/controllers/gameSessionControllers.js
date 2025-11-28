@@ -74,7 +74,7 @@ const getSession = async (req, res) => {
 
     if (!session) return res.status(404).json("Sesión no encontrada");
 
-    if (req.user.role !== "admin" && req.user._id.toString() !== session.user._id.toString()) {
+    if (req.user.role !== "admin" && req.user._id.equals(session.user._id)) {
       return res.status(403).json("No puedes ver esta sesión");
     }
 
