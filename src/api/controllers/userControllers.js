@@ -254,18 +254,19 @@ const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    if (req.user.role !== "admin" && req.user._id.toString() !== id) {
+    const isAdmin = req.user.role === "admin";
+    const isOwner = req.user._id.equals(id);
+
+    if (!isAdmin && !isOwner) {
       return res.status(403).json("No tienes permisos para eliminar este usuario");
     }
 
     // 1. Eliminar usuario
-    const userDeleted = await User.findByIdAndDelete(id);
+    const userDeleted = await User.findByIdAndDelete(id).select("-password");
+
     if (!userDeleted) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
-
-    // 2. Eliminar sus sesiones asociadas
-    await GameSession.deleteMany({ user: id });
 
     return res.status(200).json({
       message: "Usuario y sus sesiones asociadas han sido eliminados",
