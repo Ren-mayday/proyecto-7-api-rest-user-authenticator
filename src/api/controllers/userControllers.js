@@ -283,6 +283,5 @@ module.exports = {
   registerAdmin,
   loginUser,
   updateUser,
-  updateUserRole,
   deleteUser,
 };
