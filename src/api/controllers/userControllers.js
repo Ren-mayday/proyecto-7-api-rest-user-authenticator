@@ -171,7 +171,7 @@ const updateUser = async (req, res) => {
     }
 
     const isAdmin = req.user.role === "admin";
-    const isOwner = req.user._id.toString() === id;
+    const isOwner = req.user._id.equals(user._id);
 
     // 2. Permisos
     // Admin puede actualizar cualquier user
@@ -192,29 +192,37 @@ const updateUser = async (req, res) => {
       }
     }
 
-    // 4. Admin puede cambiar el rol
-    if (isAdmin && newRole) {
-      if (!["admin", "user"].includes(newRole)) {
-        return res.status(400).json("Rol inválido. Debe ser 'admin' o 'user'");
+    // 4. Campos editables
+
+    // -- Role (sólo admin) --
+
+    if (newRole) {
+      if (!isAdmin) {
+        return res.status(403).json("Sólo un admin puede cambiar roles");
       }
-      user.role = newRole;
+      if (!["admin", "user"].includes(newRole)) {
+        return res.status(400).json("Role inválido, Debe ser 'admin' o 'user'");
+      }
+      if (user.role !== newRole) {
+        user.role = newRole;
+      }
     }
 
-    // 5. Actualización de nombre de usuario
+    // -- Nombre usuario --
     if (newUserName && newUserName !== user.userName) {
       const exists = await User.findOne({ userName: newUserName });
       if (exists) return res.status(409).json("Este nombre de usuario ya existe");
       user.userName = newUserName;
     }
 
-    // 6. Actualización de email
+    // -- Email --
     if (newEmail && newEmail !== user.email) {
       const exists = await User.findOne({ email: newEmail });
       if (exists) return res.status(409).json("Este email ya está registrado");
       user.email = newEmail;
     }
 
-    // 7. Actualización de contraseña
+    // -- Contraseña --
     if (newPassword) {
       const same = await bcrypt.compare(newPassword, user.password);
       if (same) {
@@ -223,10 +231,10 @@ const updateUser = async (req, res) => {
       user.password = newPassword; // mongoose la hashea por el pre-save
     }
 
-    // 8. Guardar cambios
+    // 5. Guardar cambios
     const updated = await user.save();
 
-    // 9. Limpiar password antes de enviar
+    // 6. Limpiar password antes de enviar
     const userObj = updated.toObject();
     delete userObj.password;
 
