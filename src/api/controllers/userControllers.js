@@ -134,14 +134,16 @@ const loginUser = async (req, res) => {
 
     const user = await User.findOne({ $or: [{ userName }, { email }] });
 
+    const errorMessage = "Usuario o contraseña incorrectos";
+
     if (!user) {
-      return res.status(404).json("El usuario introducido no existe");
+      return res.status(404).json({ message: errorMessage });
     }
 
     //3. Comparar contraseña con bcrypt
     const isPasswordValid = bcrypt.compareSync(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json("Contraseña incorrecta");
+      return res.status(401).json({ message: errorMessage });
     }
 
     // Si todo está bien -> generar token JWT
@@ -255,22 +257,25 @@ const deleteUser = async (req, res, next) => {
     const { id } = req.params;
 
     const isAdmin = req.user.role === "admin";
-    const isOwner = req.user._id.equals(id);
+    const isOwner = req.user._id.equals(new mongoose.Types.ObjectId(id));
 
     if (!isAdmin && !isOwner) {
       return res.status(403).json("No tienes permisos para eliminar este usuario");
     }
 
-    // 1. Eliminar usuario
-    const userDeleted = await User.findByIdAndDelete(id).select("-password");
+    // 1. Buscar usuario
+    const user = await User.findById(id).select("-password");
 
-    if (!userDeleted) {
+    if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
+    // 2. Eliminarlo después
+    await User.findByIdAndDelete(id);
+
     return res.status(200).json({
       message: "Usuario y sus sesiones asociadas han sido eliminados",
-      userDeleted,
+      userDeleted: user,
     });
   } catch (error) {
     return res.status(500).json({ message: "Error al eliminar el usuario", error: error.message });
